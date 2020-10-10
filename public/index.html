@@ -71,11 +71,6 @@
 jQuery(function($) {
     let slpUrl = 'http://games.initlab.org:11451/info';
 
-    function slpSuccess(resp) {
-        slpShow(resp);
-        setTimeout(slpUpdate, 5000);
-    }
-
     function slpShow(resp) {
         $.each(resp, function(key, value) {
             $('#slp-' + key).text(value);
@@ -85,13 +80,13 @@ jQuery(function($) {
     }
 
     function slpUpdate() {
-        $.getJSON(slpUrl).then(slpShow);
+        return $.getJSON(slpUrl).then(slpShow);
     }
 
-    $.getJSON(slpUrl).then(slpSuccess).fail(function() {
+    slpUpdate().fail(function() {
         slpUrl = '/slp-info';
 
-        $.getJSON(slpUrl).then(slpSuccess).fail(function() {
+        slpUpdate().fail(function() {
             $('#slp-online, #slp-version').text('Unable to connect');
         });
     });
