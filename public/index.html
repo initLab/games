@@ -69,15 +69,32 @@
         <script src="https://code.jquery.com/jquery-latest.min.js"></script>
         <script>
 jQuery(function($) {
-    (function updateSlp() {
-        $.getJSON('http://games.initlab.org:11451/info').then(function(resp) {
-            $.each(resp, function(key, value) {
-                $('#slp-' + key).text(value);
-            });
+    let slpUrl = 'http://games.initlab.org:11451/info';
 
-            setTimeout(updateSlp, 5000);
+    function slpSuccess(resp) {
+        slpShow(resp);
+        setTimeout(slpUpdate, 5000);
+    }
+
+    function slpShow(resp) {
+        $.each(resp, function(key, value) {
+            $('#slp-' + key).text(value);
         });
-    })();
+
+        setTimeout(slpUpdate, 5000);
+    }
+
+    function slpUpdate() {
+        $.getJSON(slpUrl).then(slpShow);
+    }
+
+    $.getJSON(slpUrl).then(slpSuccess).fail(function() {
+        slpUrl = '/slp-info';
+
+        $.getJSON(slpUrl).then(slpSuccess).fail(function() {
+            $('#slp-online, #slp-version').text('Unable to connect');
+        });
+    });
 });
         </script>
     </body>
