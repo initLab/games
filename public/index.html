@@ -157,8 +157,8 @@ jQuery(function($) {
         slpUrl = '/slp/';
 
         slpUpdate().fail(function() {
-            $('#slp-online, #slp-version').text('Unable to connect');
-        });
+            $('#slp-loading').text('Unable to connect');
+		});
     });
 });
         </script>
