@@ -50,10 +50,13 @@
         <br>
         <a href="http://www.lan-play.com/install" target="_blank">Configuration and usage instructions</a>
         <br>
-        <ul>
+        <p id="slp-loading">Loading data from server ...</p>
+        <ul id="slp-box" hidden>
             <li>Players online: <span id="slp-online">...</span></li>
+            <li>Players idle: <span id="slp-idle">...</span></li>
             <li>Server version: <span id="slp-version">...</span></li>
         </ul>
+        <div id="slp-tables"></div>
         <!--
         <hr />
         <b>OpenRA servers</b>
@@ -69,22 +72,89 @@
         <script src="https://code.jquery.com/jquery-latest.min.js"></script>
         <script>
 jQuery(function($) {
-    let slpUrl = 'http://games.initlab.org:11451/info';
+    let slpUrl = 'http://games.initlab.org:11451/';
+	const slpLoading = $('#slp-loading');
+    const slpBox = $('#slp-box');
+    const slpTables = $('#slp-tables');
+
+    const gqlQuery = `
+    query {
+        serverInfo {
+            online
+            idle
+            version
+        }
+        room {
+            ip
+            contentId
+            hostPlayerName
+            nodeCountMax
+            nodeCount
+            nodes {
+                ip
+                playerName
+            }
+        }
+    }`;
 
     function slpShow(resp) {
-        $.each(resp, function(key, value) {
+		slpLoading.attr('hidden', 'hidden');
+		slpBox.removeAttr('hidden');
+
+        $.each(resp.data.serverInfo, function(key, value) {
             $('#slp-' + key).text(value);
+        });
+
+        slpTables.empty();
+
+        $.each(resp.data.room, function(idx, room) {
+        	let table = $('#slp_game_' + room.contentId);
+
+        	if (table.length < 1) {
+                table = $('<table>').attr({
+                    border: '1',
+                    id: 'slp_game_' + room.contentId
+                }).append(
+                	$('<thead>').append(
+						$('<tr>').append(
+							$('<th>').attr({
+                                colspan: '3'
+                            }).text('TODO: Game name [' + room.contentId + ']')
+						),
+						$('<tr>').append(
+							$('<th>').text('Host player'),
+							$('<th>').text('Slots'),
+							$('<th>').text('Players')
+						)
+                    )
+                );
+                slpTables.append(table);
+            }
+
+            const row = $('<tr>').append(
+    			$('<td>').text(room.hostPlayerName + ' (' + room.ip + ')'),
+            	$('<td>').text(room.nodeCount + '/' + room.nodeCountMax),
+			    $('<td>').append($('<ul>').append(room.nodes.filter(function(node) {
+			    	return node.ip !== room.ip;
+                }).map(function(node) {
+			    	return $('<li>').text(node.playerName + ' (' + node.ip + ')')
+                })))
+            );
+
+        	table.append(row);
         });
 
         setTimeout(slpUpdate, 5000);
     }
 
     function slpUpdate() {
-        return $.getJSON(slpUrl).then(slpShow);
+        return $.post(slpUrl, JSON.stringify({
+            query: gqlQuery
+        })).then(slpShow);
     }
 
     slpUpdate().fail(function() {
-        slpUrl = '/slp-info';
+        slpUrl = '/slp/';
 
         slpUpdate().fail(function() {
             $('#slp-online, #slp-version').text('Unable to connect');
